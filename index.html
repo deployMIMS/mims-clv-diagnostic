@@ -1,0 +1,1470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MiMS | Customer Visibility Diagnostic</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --orange: #E8673A;
+    --orange-light: #F4956F;
+    --orange-dim: rgba(232, 103, 58, 0.12);
+    --cream: #F5EFE6;
+    --cream-dim: rgba(245, 239, 230, 0.07);
+    --ink: #1A1410;
+    --ink-mid: #3D2F28;
+    --muted: rgba(245, 239, 230, 0.45);
+    --border: rgba(245, 239, 230, 0.12);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background-color: var(--ink);
+    color: var(--cream);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Background texture ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 20% 10%, rgba(232,103,58,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 50% at 80% 90%, rgba(232,103,58,0.05) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+
+  /* ── HEADER ── */
+  header {
+    padding: 28px 20px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 680px;
+    margin: 0 auto;
+  }
+
+  .logo-mark {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-icon {
+    width: 38px;
+    height: 38px;
+    background: var(--orange);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .logo-icon svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .logo-text {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--cream);
+  }
+
+  .logo-text span { color: var(--orange); }
+
+  .timer-badge {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--orange);
+    border: 1px solid rgba(232,103,58,0.35);
+    border-radius: 20px;
+    padding: 5px 12px;
+    opacity: 0;
+    animation: fadeIn 0.5s 0.8s ease forwards;
+  }
+
+  /* ── SCREENS ── */
+  .screen { display: none; animation: screenIn 0.5s ease; }
+  .screen.active { display: block; }
+
+  @keyframes screenIn {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeIn {
+    to { opacity: 1; }
+  }
+
+  /* ── INTRO SCREEN ── */
+  #screen-intro {
+    padding: 32px 0 60px;
+    text-align: center;
+  }
+
+  .intro-eyebrow {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--orange);
+    margin-bottom: 20px;
+  }
+
+  .intro-headline {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(32px, 7vw, 52px);
+    font-weight: 900;
+    line-height: 1.07;
+    letter-spacing: -0.03em;
+    margin-bottom: 22px;
+    color: var(--cream);
+  }
+
+  .intro-headline em {
+    font-style: italic;
+    color: var(--orange);
+  }
+
+  .intro-sub {
+    font-size: 15px;
+    font-weight: 300;
+    line-height: 1.7;
+    color: var(--muted);
+    max-width: 480px;
+    margin: 0 auto 36px;
+  }
+
+  .intro-sub strong {
+    color: var(--cream);
+    font-weight: 500;
+  }
+
+  .stat-row {
+    display: flex;
+    justify-content: center;
+    gap: 28px;
+    margin-bottom: 44px;
+    flex-wrap: wrap;
+  }
+
+  .stat-pill {
+    background: var(--cream-dim);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 20px;
+    text-align: center;
+    min-width: 100px;
+  }
+
+  .stat-pill .num {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--orange);
+    display: block;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .stat-pill .lbl {
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+  }
+
+  .btn-start {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--orange);
+    color: #fff;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    border: none;
+    border-radius: 50px;
+    padding: 16px 36px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    box-shadow: 0 8px 32px rgba(232,103,58,0.35);
+  }
+
+  .btn-start:hover {
+    background: var(--orange-light);
+    transform: translateY(-2px);
+    box-shadow: 0 14px 40px rgba(232,103,58,0.45);
+  }
+
+  .btn-start svg { width: 16px; height: 16px; }
+
+  .intro-footnote {
+    margin-top: 20px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  /* ── PROGRESS ── */
+  #screen-quiz { padding-bottom: 60px; }
+
+  .progress-header {
+    padding: 20px 0 28px;
+    position: sticky;
+    top: 0;
+    background: var(--ink);
+    z-index: 10;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 36px;
+  }
+
+  .progress-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+
+  .q-counter {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .q-counter span { color: var(--orange); }
+
+  .progress-pct {
+    font-family: 'Playfair Display', serif;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .progress-track {
+    height: 3px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--orange), var(--orange-light));
+    border-radius: 3px;
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* ── QUESTION CARD ── */
+  .q-block { display: none; }
+  .q-block.active { display: block; animation: screenIn 0.45s ease; }
+
+  .q-label {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--orange);
+    margin-bottom: 12px;
+  }
+
+  .q-text {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(22px, 5vw, 30px);
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+    color: var(--cream);
+    margin-bottom: 10px;
+  }
+
+  .q-context {
+    font-size: 13px;
+    font-weight: 300;
+    color: var(--muted);
+    line-height: 1.6;
+    margin-bottom: 30px;
+  }
+
+  /* ── OPTIONS ── */
+  .options { display: flex; flex-direction: column; gap: 10px; }
+
+  .option {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 16px 18px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: transparent;
+    text-align: left;
+    width: 100%;
+    color: var(--cream);
+    font-family: 'DM Sans', sans-serif;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .option::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--orange-dim);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .option:hover { border-color: rgba(232,103,58,0.4); }
+  .option:hover::before { opacity: 1; }
+
+  .option.selected {
+    border-color: var(--orange);
+    background: var(--orange-dim);
+  }
+
+  .option.selected .opt-radio { background: var(--orange); border-color: var(--orange); }
+  .option.selected .opt-radio::after { opacity: 1; }
+
+  .opt-radio {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    flex-shrink: 0;
+    margin-top: 1px;
+    transition: all 0.2s;
+    position: relative;
+  }
+
+  .opt-radio::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #fff;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .opt-body { flex: 1; }
+
+  .opt-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--cream);
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  .opt-sub {
+    font-size: 12px;
+    font-weight: 300;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+
+  /* ── NAV BUTTONS ── */
+  .q-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 30px;
+  }
+
+  .btn-back {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    padding: 11px 22px;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-back:hover { border-color: var(--cream); color: var(--cream); }
+  .btn-back:disabled { opacity: 0.3; cursor: default; }
+
+  .btn-next {
+    background: var(--orange);
+    color: #fff;
+    border: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 13px 30px;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.25s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 6px 24px rgba(232,103,58,0.3);
+  }
+
+  .btn-next:hover:not(:disabled) {
+    background: var(--orange-light);
+    transform: translateY(-1px);
+  }
+
+  .btn-next:disabled {
+    opacity: 0.4;
+    cursor: default;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .btn-next svg { width: 14px; height: 14px; }
+
+  /* ── RESULTS SCREEN ── */
+  #screen-results { padding: 36px 0 80px; }
+
+  .result-eyebrow {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--orange);
+    margin-bottom: 16px;
+    text-align: center;
+  }
+
+  .score-ring-wrap {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 28px;
+  }
+
+  .score-ring {
+    width: 160px;
+    height: 160px;
+    position: relative;
+  }
+
+  .score-ring svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+  }
+
+  .score-ring-bg {
+    fill: none;
+    stroke: var(--border);
+    stroke-width: 8;
+  }
+
+  .score-ring-fill {
+    fill: none;
+    stroke: var(--orange);
+    stroke-width: 8;
+    stroke-linecap: round;
+    stroke-dasharray: 408;
+    stroke-dashoffset: 408;
+    transition: stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1) 0.3s;
+  }
+
+  .score-center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .score-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 42px;
+    font-weight: 900;
+    color: var(--cream);
+    line-height: 1;
+  }
+
+  .score-denom {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .result-tier-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 5px 14px;
+    border-radius: 20px;
+    margin: 0 auto 18px;
+    display: flex;
+    width: fit-content;
+    margin: 0 auto 18px;
+  }
+
+  .result-headline {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(26px, 6vw, 40px);
+    font-weight: 900;
+    line-height: 1.1;
+    letter-spacing: -0.025em;
+    text-align: center;
+    margin-bottom: 14px;
+    color: var(--cream);
+  }
+
+  .result-desc {
+    font-size: 14px;
+    font-weight: 300;
+    line-height: 1.75;
+    color: var(--muted);
+    text-align: center;
+    max-width: 500px;
+    margin: 0 auto 36px;
+  }
+
+  /* ── BREAKDOWN ── */
+  .breakdown {
+    background: var(--cream-dim);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 28px;
+  }
+
+  .breakdown-title {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 18px;
+  }
+
+  .breakdown-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .breakdown-row:last-child { border-bottom: none; }
+
+  .breakdown-label {
+    font-size: 13px;
+    color: var(--cream);
+    font-weight: 400;
+  }
+
+  .breakdown-bar-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    max-width: 180px;
+    margin-left: 12px;
+  }
+
+  .breakdown-bar {
+    flex: 1;
+    height: 4px;
+    background: var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .breakdown-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    background: var(--orange);
+    transition: width 1s ease 0.5s;
+  }
+
+  .breakdown-score {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--orange);
+    min-width: 28px;
+    text-align: right;
+  }
+
+  /* ── CTA BOX ── */
+  .cta-box {
+    background: linear-gradient(135deg, rgba(232,103,58,0.15), rgba(232,103,58,0.05));
+    border: 1px solid rgba(232,103,58,0.3);
+    border-radius: 20px;
+    padding: 32px 28px;
+    text-align: center;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cta-box::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -20%;
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(circle, rgba(232,103,58,0.15), transparent 70%);
+    pointer-events: none;
+  }
+
+  .spots-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--orange);
+    background: rgba(232,103,58,0.12);
+    border: 1px solid rgba(232,103,58,0.25);
+    border-radius: 20px;
+    padding: 5px 12px;
+    margin-bottom: 16px;
+  }
+
+  .spots-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--orange);
+    animation: pulse 1.5s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .cta-headline {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--cream);
+    margin-bottom: 10px;
+    line-height: 1.2;
+  }
+
+  .cta-body {
+    font-size: 13px;
+    font-weight: 300;
+    color: var(--muted);
+    line-height: 1.65;
+    margin-bottom: 24px;
+    max-width: 380px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .cta-body strong { color: var(--cream); font-weight: 500; }
+
+  .btn-cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    background: var(--orange);
+    color: #fff;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    border: none;
+    border-radius: 50px;
+    padding: 17px 32px;
+    cursor: pointer;
+    transition: all 0.25s;
+    text-decoration: none;
+    box-shadow: 0 10px 36px rgba(232,103,58,0.4);
+    letter-spacing: 0.01em;
+  }
+
+  .btn-cta:hover {
+    background: var(--orange-light);
+    transform: translateY(-2px);
+    box-shadow: 0 16px 44px rgba(232,103,58,0.5);
+  }
+
+  .btn-cta svg { width: 16px; height: 16px; }
+
+  .cta-price {
+    margin-top: 16px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .cta-price strong { color: var(--cream); }
+
+  .restart-link {
+    display: block;
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted);
+    text-decoration: underline;
+    cursor: pointer;
+    margin-top: 16px;
+    transition: color 0.2s;
+  }
+
+  .restart-link:hover { color: var(--cream); }
+
+  /* ── DIVIDER ── */
+  .or-divider {
+    text-align: center;
+    font-size: 11px;
+    color: var(--muted);
+    position: relative;
+    margin: 20px 0;
+  }
+
+  .or-divider::before, .or-divider::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 35%;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .or-divider::before { left: 0; }
+  .or-divider::after { right: 0; }
+
+  /* Tier colors */
+  .tier-critical { background: rgba(220,38,38,0.12); color: #f87171; border: 1px solid rgba(220,38,38,0.25); }
+  .tier-struggling { background: rgba(234,179,8,0.1); color: #fbbf24; border: 1px solid rgba(234,179,8,0.2); }
+  .tier-developing { background: rgba(59,130,246,0.1); color: #60a5fa; border: 1px solid rgba(59,130,246,0.2); }
+  .tier-strong { background: rgba(34,197,94,0.1); color: #4ade80; border: 1px solid rgba(34,197,94,0.2); }
+
+  /* responsive */
+  @media (max-width: 420px) {
+    header { padding: 20px 16px 16px; }
+    .wrap { padding: 0 16px; }
+    .stat-row { gap: 12px; }
+    .stat-pill { padding: 12px 14px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-mark">
+    <div class="logo-icon">
+      <!-- MiMS swoop icon recreation in SVG -->
+      <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="20" cy="20" rx="20" ry="20" fill="#E8673A"/>
+        <path d="M8 18 Q14 10 20 16 Q26 22 32 14" stroke="#F5EFE6" stroke-width="3" stroke-linecap="round" fill="none"/>
+        <path d="M8 18 Q14 26 20 22 Q26 18 32 24" stroke="#F5EFE6" stroke-width="2.5" stroke-linecap="round" fill="rgba(245,239,230,0.3)"/>
+      </svg>
+    </div>
+    <div class="logo-text">M<span>i</span>MS</div>
+  </div>
+  <div class="timer-badge">3 min diagnostic</div>
+</header>
+
+<!-- ══ INTRO ══ -->
+<div id="screen-intro" class="screen active">
+  <div class="wrap">
+    <p class="intro-eyebrow">Customer Lifetime Value · Diagnostic</p>
+    <h1 class="intro-headline">
+      How many customers have<br>you served in the last<br>6 months — and<br><em>where are they now?</em>
+    </h1>
+    <p class="intro-sub">
+      This 8-question diagnostic measures your business's <strong>customer retention health</strong> and visibility gaps — in under 3 minutes. Get your score out of 100.
+    </p>
+    <div class="stat-row">
+      <div class="stat-pill">
+        <span class="num">8</span>
+        <span class="lbl">Questions</span>
+      </div>
+      <div class="stat-pill">
+        <span class="num">3</span>
+        <span class="lbl">Minutes</span>
+      </div>
+      <div class="stat-pill">
+        <span class="num">50</span>
+        <span class="lbl">Spots Only</span>
+      </div>
+    </div>
+    <button class="btn-start" onclick="startQuiz()">
+      Run My Diagnostic
+      <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3 8h10M9 4l4 4-4 4" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+    <p class="intro-footnote">Free · No account required · Results delivered instantly</p>
+  </div>
+</div>
+
+<!-- ══ QUIZ ══ -->
+<div id="screen-quiz" class="screen">
+  <div class="wrap">
+    <div class="progress-header">
+      <div class="progress-meta">
+        <span class="q-counter">Question <span id="q-num">1</span> of 8</span>
+        <span class="progress-pct" id="q-pct">0%</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+      </div>
+    </div>
+
+    <!-- Q1 -->
+    <div class="q-block active" id="q1">
+      <p class="q-label">Customer Retention · Q1</p>
+      <h2 class="q-text">Do you know how many customers came back to buy from you again in the last 6 months?</h2>
+      <p class="q-context">Repeat purchase rate is the single strongest indicator of business health. Most SME owners guess — the good ones know.</p>
+      <div class="options" data-q="1">
+        <button class="option" data-score="0" onclick="selectOption(this, 1)">
+          <span class="opt-radio"></span>
+          <span class="opt-body">
+            <span class="opt-label">No, I don't track this</span>
+            <span class="opt-sub">I serve customers but don't monitor who returns</span>
+          </span>
+        </button>
+        <button class="option" data-score="4" onclick="selectOption(this, 1)">
+          <span class="opt-radio"></span>
+          <span class="opt-body">
+            <span class="opt-label">I have a rough idea</span>
+            <span class="opt-sub">I notice familiar faces/names but no formal tracking</span>
+          </span>
+        </button>
+        <button class="option" data-score="8" onclick="selectOption(this, 1)">
+          <span class="opt-radio"></span>
+          <span class="opt-body">
+            <span class="opt-label">Yes, I track it loosely</span>
+            <span class="opt-sub">I have a list or spreadsheet somewhere</span>
+          </span>
+        </button>
+        <button class="option" data-score="12" onclick="selectOption(this, 1)">
+          <span class="opt-radio"></span>
+          <span class="opt-body">
+            <span class="opt-label">Yes, precisely — I know my repeat rate</span>
+            <span class="opt-sub">I have a system that shows exactly who returned and when</span>
+          </span>
+        </button>
+      </div>
+      <div class="q-nav">
+        <button class="btn-back" disabled>Back</button>
+        <button class="btn-next" id="next-1" disabled onclick="nextQ(1)">
+          Continue
+          <svg viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="q-block" id="q2">
+      <p class="q-label">Customer Experience · Q2</p>
+      <h2 class="q-text">When a customer stops buying, do you know why?</h2>
+      <p class="q-context">Customer churn is silent. Businesses that don't ask don't know — and keep losing people to problems they could fix in a week.</p>
+      <div class="options" data-q="2">
+        <button class="option" data-score="0" onclick="selectOption(this, 2)">
+          <span class="opt-radio"></span>
+          <span class="opt-body">
+            <span class="opt-label">No — they just disappear</span>
+            <span class="opt-sub">I rarely know when or why a customer stops coming back</span>
+          </span>
+        </button>
+        <button class="option" data-score="4" onclick="selectOption(this, 2)">
+          <span class="opt-radio"></span>
+          <span class="opt-body">
+            <span class="opt-label">Sometimes — if they tell me directly</span>
+            <span class="opt-sub">I only find out if a customer complains or gives feedback voluntarily</span>
+          </span>
+        </button>
+        <button class="option" data-score="8" onclick="selectOption(this, 2)">
+          <span class="opt-radio"></span>
+          <span class="opt-body">
+            <span class="opt-label">I follow up occasionally</span>
+            <span class="opt-sub">I check in with some customers when I notice they've gone quiet</span>
+          </span>
+        </button>
+        <button class="option" data-score="12" onclick="selectOption(this, 2)">
+          <span class="opt-radio"></span>
+          <span class="opt-body">
+            <span class="opt-label">Yes — I have a re-engagement process</span>
+            <span class="opt-sub">I actively reach out to dormant customers and document why they left</span>
+          </span>
+        </button>
+      </div>
+      <div class="q-nav">
+        <button class="btn-back" onclick="prevQ(2)">Back</button>
+        <button class="btn-next" id="next-2" disabled onclick="nextQ(2)">
+          Continue
+          <svg viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Q3 -->
+    <div class="q-block" id="q3">
+      <p class="q-label">Customer Lifetime Value · Q3</p>
+      <h2 class="q-text">Do you know what one customer is worth to your business over 12 months?</h2>
+      <p class="q-context">CLV is the most important number most small business owners have never calculated. It changes every decision about where to spend, what to offer, and who to chase.</p>
+      <div class="options" data-q="3">
+        <button class="option" data-score="0" onclick="selectOption(this, 3)">
+          <span class="opt-radio"></span>
+          <span class="opt-body">
+            <span class="opt-label">No idea — I just focus on each sale</span>
+            <span class="opt-sub">I think transaction by transaction, not long-term</span>
+          </span>
+        </button>
+        <button class="option" data-score="5" onclick="selectOption(this, 3)">
+          <span class="opt-radio"></span>
+          <span class="opt-body">
+            <span class="opt-label">I have a ballpark guess</span>
+            <span class="opt-sub">Based on intuition, not actual data</span>
+          </span>
+        </button>
+        <button class="option" data-score="9" onclick="selectOption(this, 3)">
+          <span class="opt-radio"></span>
+          <span class="opt-body">
+            <span class="opt-label">Roughly — I've estimated it before</span>
+            <span class="opt-sub">I've done the math but it's not part of my regular decisions</span>
+          </span>
+        </button>
+        <button class="option" data-score="13" onclick="selectOption(this, 3)">
+          <span class="opt-radio"></span>
+          <span class="opt-body">
+            <span class="opt-label">Yes — and I use it to make decisions</span>
+            <span class="opt-sub">My CLV figure informs what I offer, how I price, and who I target</span>
+          </span>
+        </button>
+      </div>
+      <div class="q-nav">
+        <button class="btn-back" onclick="prevQ(3)">Back</button>
+        <button class="btn-next" id="next-3" disabled onclick="nextQ(3)">
+          Continue
+          <svg viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Q4 -->
+    <div class="q-block" id="q4">
+      <p class="q-label">Communication · Q4</p>
+      <h2 class="q-text">After a customer buys from you, how do you stay in contact?</h2>
+      <p class="q-context">The moment a transaction ends is the moment your relationship either deepens or disappears. Most businesses let it disappear.</p>
+      <div class="options" data-q="4">
+        <button class="option" data-score="0" onclick="selectOption(this, 4)">
+          <span class="opt-radio"></span>
+          <span class="opt-body">
+            <span class="opt-label">I don't — I wait for them to return</span>
+            <span class="opt-sub">My customers know where to find me when they need me</span>
+          </span>
+        </button>
+        <button class="option" data-score="4" onclick="selectOption(this, 4)">
+          <span class="opt-radio"></span>
+          <span class="opt-body">
+            <span class="opt-label">Occasionally via WhatsApp or social media</span>
+            <span class="opt-sub">Informal, sporadic — when I remember or have something to share</span>
+          </span>
+        </button>
+        <button class="option" data-score="8" onclick="selectOption(this, 4)">
+          <span class="opt-radio"></span>
+          <span class="opt-body">
+            <span class="opt-label">I send updates or promotions sometimes</span>
+            <span class="opt-sub">An occasional message or post they might see</span>
+          </span>
+        </button>
+        <button class="option" data-score="12" onclick="selectOption(this, 4)">
+          <span class="opt-radio"></span>
+          <span class="opt-body">
+            <span class="opt-label">I have a follow-up sequence in place</span>
+            <span class="opt-sub">A consistent touchpoint system — email, message, or call — after every purchase</span>
+          </span>
+        </button>
+      </div>
+      <div class="q-nav">
+        <button class="btn-back" onclick="prevQ(4)">Back</button>
+        <button class="btn-next" id="next-4" disabled onclick="nextQ(4)">
+          Continue
+          <svg viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Q5 -->
+    <div class="q-block" id="q5">
+      <p class="q-label">Pricing Intelligence · Q5</p>
+      <h2 class="q-text">Is your pricing designed to keep customers — or just close the first sale?</h2>
+      <p class="q-context">Retention pricing and acquisition pricing are not the same. Businesses that don't distinguish between the two are constantly starting from zero.</p>
+      <div class="options" data-q="5">
+        <button class="option" data-score="0" onclick="selectOption(this, 5)">
+          <span class="opt-radio"></span>
+          <span class="opt-body">
+            <span class="opt-label">I price based on what feels right or what others charge</span>
+            <span class="opt-sub">My prices are intuitive, not strategic</span>
+          </span>
+        </button>
+        <button class="option" data-score="4" onclick="selectOption(this, 5)">
+          <span class="opt-radio"></span>
+          <span class="opt-body">
+            <span class="opt-label">I focus on making the first sale affordable</span>
+            <span class="opt-sub">Getting them in is the priority — I'll figure out the rest later</span>
+          </span>
+        </button>
+        <button class="option" data-score="9" onclick="selectOption(this, 5)">
+          <span class="opt-radio"></span>
+          <span class="opt-body">
+            <span class="opt-label">I have some loyalty incentives or repeat-buyer offers</span>
+            <span class="opt-sub">I reward returning customers informally</span>
+          </span>
+        </button>
+        <button class="option" data-score="13" onclick="selectOption(this, 5)">
+          <span class="opt-radio"></span>
+          <span class="opt-body">
+            <span class="opt-label">I have a clear pricing structure for new and existing customers</span>
+            <span class="opt-sub">My pricing is deliberately built to convert and retain, separately</span>
+          </span>
+        </button>
+      </div>
+      <div class="q-nav">
+        <button class="btn-back" onclick="prevQ(5)">Back</button>
+        <button class="btn-next" id="next-5" disabled onclick="nextQ(5)">
+          Continue
+          <svg viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Q6 -->
+    <div class="q-block" id="q6">
+      <p class="q-label">Brand Visibility · Q6</p>
+      <h2 class="q-text">Can your past customers easily refer someone new to you — right now?</h2>
+      <p class="q-context">Referral is the highest-value acquisition channel for SMEs. But it only works if customers can clearly explain what you do, who you serve, and why you're different.</p>
+      <div class="options" data-q="6">
+        <button class="option" data-score="0" onclick="selectOption(this, 6)">
+          <span class="opt-radio"></span>
+          <span class="opt-body">
+            <span class="opt-label">Probably not — my messaging isn't clear even to me</span>
+            <span class="opt-sub">I struggle to explain what makes me different in a sentence</span>
+          </span>
+        </button>
+        <button class="option" data-score="4" onclick="selectOption(this, 6)">
+          <span class="opt-radio"></span>
+          <span class="opt-body">
+            <span class="opt-label">Maybe — if they liked me enough</span>
+            <span class="opt-sub">But I haven't made it easy or given them the tools to do it</span>
+          </span>
+        </button>
+        <button class="option" data-score="8" onclick="selectOption(this, 6)">
+          <span class="opt-radio"></span>
+          <span class="opt-body">
+            <span class="opt-label">Yes — my brand has a clear message</span>
+            <span class="opt-sub">People generally know what I do and who I help</span>
+          </span>
+        </button>
+        <button class="option" data-score="12" onclick="selectOption(this, 6)">
+          <span class="opt-radio"></span>
+          <span class="opt-body">
+            <span class="opt-label">Yes — and I actively encourage referrals</span>
+            <span class="opt-sub">I have a referral process and my message is sharp and consistent across channels</span>
+          </span>
+        </button>
+      </div>
+      <div class="q-nav">
+        <button class="btn-back" onclick="prevQ(6)">Back</button>
+        <button class="btn-next" id="next-6" disabled onclick="nextQ(6)">
+          Continue
+          <svg viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Q7 -->
+    <div class="q-block" id="q7">
+      <p class="q-label">Customer Journey · Q7</p>
+      <h2 class="q-text">Do you know the exact steps a customer takes from first hearing about you to paying you?</h2>
+      <p class="q-context">If you don't know your own customer journey, you can't fix the leaks in it. Most SMEs lose customers between awareness and purchase without ever knowing why.</p>
+      <div class="options" data-q="7">
+        <button class="option" data-score="0" onclick="selectOption(this, 7)">
+          <span class="opt-radio"></span>
+          <span class="opt-body">
+            <span class="opt-label">No — it happens organically</span>
+            <span class="opt-sub">I haven't thought about it as a structured sequence</span>
+          </span>
+        </button>
+        <button class="option" data-score="4" onclick="selectOption(this, 7)">
+          <span class="opt-radio"></span>
+          <span class="opt-body">
+            <span class="opt-label">I have a rough idea but it's not documented</span>
+            <span class="opt-sub">I know the general flow but it varies a lot by customer</span>
+          </span>
+        </button>
+        <button class="option" data-score="8" onclick="selectOption(this, 7)">
+          <span class="opt-radio"></span>
+          <span class="opt-body">
+            <span class="opt-label">I've mapped it out once or twice</span>
+            <span class="opt-sub">I know the main touchpoints but haven't optimized them</span>
+          </span>
+        </button>
+        <button class="option" data-score="12" onclick="selectOption(this, 7)">
+          <span class="opt-radio"></span>
+          <span class="opt-body">
+            <span class="opt-label">Yes — I have a documented CX map</span>
+            <span class="opt-sub">I know every touchpoint and actively improve the weak ones</span>
+          </span>
+        </button>
+      </div>
+      <div class="q-nav">
+        <button class="btn-back" onclick="prevQ(7)">Back</button>
+        <button class="btn-next" id="next-7" disabled onclick="nextQ(7)">
+          Continue
+          <svg viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Q8 -->
+    <div class="q-block" id="q8">
+      <p class="q-label">Growth Readiness · Q8</p>
+      <h2 class="q-text">If you acquired 20 new customers this month, do you have systems to serve and retain them all?</h2>
+      <p class="q-context">Growth without infrastructure creates chaos. The businesses that scale well don't just get customers — they have the systems to keep them.</p>
+      <div class="options" data-q="8">
+        <button class="option" data-score="0" onclick="selectOption(this, 8)">
+          <span class="opt-radio"></span>
+          <span class="opt-body">
+            <span class="opt-label">No — 20 new customers would overwhelm me</span>
+            <span class="opt-sub">I don't have the systems or processes to handle that volume</span>
+          </span>
+        </button>
+        <button class="option" data-score="4" onclick="selectOption(this, 8)">
+          <span class="opt-radio"></span>
+          <span class="opt-body">
+            <span class="opt-label">Partially — I'd manage but things would slip</span>
+            <span class="opt-sub">Some customers might get a worse experience if volume suddenly jumped</span>
+          </span>
+        </button>
+        <button class="option" data-score="8" onclick="selectOption(this, 8)">
+          <span class="opt-radio"></span>
+          <span class="opt-body">
+            <span class="opt-label">Mostly — I could handle it with effort</span>
+            <span class="opt-sub">I have basic systems but would need to stretch them</span>
+          </span>
+        </button>
+        <button class="option" data-score="14" onclick="selectOption(this, 8)">
+          <span class="opt-radio"></span>
+          <span class="opt-body">
+            <span class="opt-label">Yes — I'm built to scale</span>
+            <span class="opt-sub">My CRM, onboarding, and follow-up systems can absorb new customers without breaking</span>
+          </span>
+        </button>
+      </div>
+      <div class="q-nav">
+        <button class="btn-back" onclick="prevQ(8)">Back</button>
+        <button class="btn-next" id="next-8" disabled onclick="showResults()">
+          Get My Score
+          <svg viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ RESULTS ══ -->
+<div id="screen-results" class="screen">
+  <div class="wrap">
+    <p class="result-eyebrow">Your CLV Visibility Score</p>
+    <div class="score-ring-wrap">
+      <div class="score-ring">
+        <svg viewBox="0 0 160 160">
+          <circle class="score-ring-bg" cx="80" cy="80" r="65"/>
+          <circle class="score-ring-fill" id="score-ring-fill" cx="80" cy="80" r="65"/>
+        </svg>
+        <div class="score-center">
+          <span class="score-num" id="score-display">0</span>
+          <span class="score-denom">out of 100</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="result-tier-badge" id="tier-badge">—</div>
+    <h2 class="result-headline" id="result-headline">Calculating…</h2>
+    <p class="result-desc" id="result-desc"></p>
+
+    <div class="breakdown">
+      <p class="breakdown-title">Score Breakdown by Category</p>
+      <div class="breakdown-row">
+        <span class="breakdown-label">Customer Retention</span>
+        <div class="breakdown-bar-wrap">
+          <div class="breakdown-bar"><div class="breakdown-bar-fill" id="bar-1" style="width:0%"></div></div>
+          <span class="breakdown-score" id="bscore-1">0</span>
+        </div>
+      </div>
+      <div class="breakdown-row">
+        <span class="breakdown-label">Churn Awareness</span>
+        <div class="breakdown-bar-wrap">
+          <div class="breakdown-bar"><div class="breakdown-bar-fill" id="bar-2" style="width:0%"></div></div>
+          <span class="breakdown-score" id="bscore-2">0</span>
+        </div>
+      </div>
+      <div class="breakdown-row">
+        <span class="breakdown-label">CLV Knowledge</span>
+        <div class="breakdown-bar-wrap">
+          <div class="breakdown-bar"><div class="breakdown-bar-fill" id="bar-3" style="width:0%"></div></div>
+          <span class="breakdown-score" id="bscore-3">0</span>
+        </div>
+      </div>
+      <div class="breakdown-row">
+        <span class="breakdown-label">Post-Sale Follow-Up</span>
+        <div class="breakdown-bar-wrap">
+          <div class="breakdown-bar"><div class="breakdown-bar-fill" id="bar-4" style="width:0%"></div></div>
+          <span class="breakdown-score" id="bscore-4">0</span>
+        </div>
+      </div>
+      <div class="breakdown-row">
+        <span class="breakdown-label">Pricing Architecture</span>
+        <div class="breakdown-bar-wrap">
+          <div class="breakdown-bar"><div class="breakdown-bar-fill" id="bar-5" style="width:0%"></div></div>
+          <span class="breakdown-score" id="bscore-5">0</span>
+        </div>
+      </div>
+      <div class="breakdown-row">
+        <span class="breakdown-label">Brand Referability</span>
+        <div class="breakdown-bar-wrap">
+          <div class="breakdown-bar"><div class="breakdown-bar-fill" id="bar-6" style="width:0%"></div></div>
+          <span class="breakdown-score" id="bscore-6">0</span>
+        </div>
+      </div>
+      <div class="breakdown-row">
+        <span class="breakdown-label">CX Journey Clarity</span>
+        <div class="breakdown-bar-wrap">
+          <div class="breakdown-bar"><div class="breakdown-bar-fill" id="bar-7" style="width:0%"></div></div>
+          <span class="breakdown-score" id="bscore-7">0</span>
+        </div>
+      </div>
+      <div class="breakdown-row">
+        <span class="breakdown-label">Growth Readiness</span>
+        <div class="breakdown-bar-wrap">
+          <div class="breakdown-bar"><div class="breakdown-bar-fill" id="bar-8" style="width:0%"></div></div>
+          <span class="breakdown-score" id="bscore-8">0</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="cta-box">
+      <div class="spots-tag">
+        <span class="spots-dot"></span>
+        Limited to 50 Businesses
+      </div>
+      <h3 class="cta-headline">Your 14-Day Local Visibility Deployment is ready.</h3>
+      <p class="cta-body">
+        Share your score and we'll send you a <strong>custom action plan</strong> — built around exactly where your business is leaking customers. Includes your CRM template, Brand Voice Guide, Pricing Architecture, and full deployment support.
+      </p>
+      <a class="btn-cta" id="email-cta-link" href="">
+        <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="4" width="12" height="8" rx="1.5" stroke="#fff" stroke-width="1.5"/><path d="M2 5l6 4.5L14 5" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Claim My Spot — $50
+      </a>
+      <p class="cta-price">One-time · Fully delivered in 14 days · <strong>50 businesses only</strong></p>
+    </div>
+
+    <span class="restart-link" onclick="restart()">← Start over / Retake the diagnostic</span>
+  </div>
+</div>
+
+<script>
+  const answers = {};
+  const maxScores = [12, 12, 13, 12, 13, 12, 12, 14]; // per question
+  const totalMax = maxScores.reduce((a,b) => a+b, 0); // = 100
+
+  function startQuiz() {
+    showScreen('screen-quiz');
+    showQ(1);
+    updateProgress(0);
+  }
+
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0, 0);
+  }
+
+  function showQ(n) {
+    document.querySelectorAll('.q-block').forEach(q => q.classList.remove('active'));
+    document.getElementById('q'+n).classList.add('active');
+    document.getElementById('q-num').textContent = n;
+    updateProgress((n-1) / 8);
+  }
+
+  function updateProgress(ratio) {
+    const pct = Math.round(ratio * 100);
+    document.getElementById('progress-fill').style.width = pct + '%';
+    document.getElementById('q-pct').textContent = pct + '%';
+  }
+
+  function selectOption(el, qNum) {
+    const block = document.getElementById('q'+qNum);
+    block.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    answers[qNum] = parseInt(el.dataset.score);
+    document.getElementById('next-'+qNum).disabled = false;
+  }
+
+  function nextQ(current) {
+    const next = current + 1;
+    showQ(next);
+    // if already answered, re-enable next
+    if (answers[next] !== undefined) {
+      document.getElementById('next-'+next).disabled = false;
+    }
+    // restore selection UI
+    if (answers[next] !== undefined) {
+      const block = document.getElementById('q'+next);
+      block.querySelectorAll('.option').forEach(o => {
+        if (parseInt(o.dataset.score) === answers[next]) o.classList.add('selected');
+      });
+    }
+  }
+
+  function prevQ(current) {
+    const prev = current - 1;
+    showQ(prev);
+    if (answers[prev] !== undefined) {
+      document.getElementById('next-'+prev).disabled = false;
+      const block = document.getElementById('q'+prev);
+      block.querySelectorAll('.option').forEach(o => {
+        if (parseInt(o.dataset.score) === answers[prev]) o.classList.add('selected');
+      });
+    }
+  }
+
+  function showResults() {
+    const raw = Object.values(answers).reduce((a,b) => a+b, 0);
+    const score = Math.round((raw / totalMax) * 100);
+
+    showScreen('screen-results');
+
+    // animate score number
+    let current = 0;
+    const interval = setInterval(() => {
+      current = Math.min(current + 2, score);
+      document.getElementById('score-display').textContent = current;
+      if (current >= score) clearInterval(interval);
+    }, 30);
+
+    // animate ring
+    const circumference = 2 * Math.PI * 65; // 408.4
+    const fill = document.getElementById('score-ring-fill');
+    setTimeout(() => {
+      const offset = circumference - (score / 100) * circumference;
+      fill.style.strokeDashoffset = offset;
+    }, 100);
+
+    // tier
+    let tier, tierClass, headline, desc;
+    if (score <= 25) {
+      tier = '🚨 Critical — Customer Leak';
+      tierClass = 'tier-critical';
+      headline = 'Your business is losing customers silently.';
+      desc = 'Your score reveals significant gaps in how you attract, retain, and re-engage customers. Most of your past buyers have no path back to you — and no reason to refer you. The good news: these are fixable systems, not permanent problems.';
+    } else if (score <= 50) {
+      tier = '⚠️ Developing — Needs Structure';
+      tierClass = 'tier-struggling';
+      headline = 'You have potential being left on the table.';
+      desc = 'You\'re doing some things right, but without consistent systems, you\'re relying on luck to keep customers. You likely have relationships that could become repeat business — but no mechanism to activate them.';
+    } else if (score <= 74) {
+      tier = '📈 Building — Strong Foundation';
+      tierClass = 'tier-developing';
+      headline = 'You\'re ahead of most small businesses.';
+      desc = 'Your instincts are good and some systems are in place. The gap between where you are and a well-oiled retention engine is smaller than you think — but the details matter now.';
+    } else {
+      tier = '✅ Strong — Optimise & Scale';
+      tierClass = 'tier-strong';
+      headline = 'You\'re running a retention-aware business.';
+      desc = 'Your systems are solid. The opportunity now is to formalise, automate, and scale what\'s working — and fill the remaining gaps before you grow past the point where personal relationships hold everything together.';
+    }
+
+    document.getElementById('tier-badge').textContent = tier;
+    document.getElementById('tier-badge').className = 'result-tier-badge ' + tierClass;
+    document.getElementById('result-headline').textContent = headline;
+    document.getElementById('result-desc').textContent = desc;
+
+    // breakdown bars
+    for (let i = 1; i <= 8; i++) {
+      const s = answers[i] || 0;
+      const max = maxScores[i-1];
+      const pct = Math.round((s / max) * 100);
+      setTimeout(() => {
+        document.getElementById('bar-'+i).style.width = pct + '%';
+        document.getElementById('bscore-'+i).textContent = pct + '%';
+      }, 200 + i * 80);
+    }
+
+    // email CTA
+    const subject = encodeURIComponent(`My MiMS CLV Score: ${score}/100 — Claiming My Spot`);
+    const body = encodeURIComponent(
+`Hi MiMS team,
+
+I just completed the 8-Question CLV/CX Diagnostic and here are my results:
+
+Overall Score: ${score}/100
+Tier: ${tier}
+
+Score breakdown:
+- Customer Retention: ${Math.round((answers[1]||0)/maxScores[0]*100)}%
+- Churn Awareness: ${Math.round((answers[2]||0)/maxScores[1]*100)}%
+- CLV Knowledge: ${Math.round((answers[3]||0)/maxScores[2]*100)}%
+- Post-Sale Follow-Up: ${Math.round((answers[4]||0)/maxScores[3]*100)}%
+- Pricing Architecture: ${Math.round((answers[5]||0)/maxScores[4]*100)}%
+- Brand Referability: ${Math.round((answers[6]||0)/maxScores[5]*100)}%
+- CX Journey Clarity: ${Math.round((answers[7]||0)/maxScores[6]*100)}%
+- Growth Readiness: ${Math.round((answers[8]||0)/maxScores[7]*100)}%
+
+I'd like to claim my spot in the 14-Day Local Visibility Deployment.
+
+Business name: 
+Industry: 
+Location: 
+
+Looking forward to hearing from you.`
+    );
+
+    document.getElementById('email-cta-link').href =
+      `mailto:ops@deploymims.com?subject=${subject}&body=${body}`;
+  }
+
+  function restart() {
+    Object.keys(answers).forEach(k => delete answers[k]);
+    document.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+    document.querySelectorAll('.btn-next').forEach(b => b.disabled = true);
+    showScreen('screen-intro');
+  }
+</script>
+</body>
+</html>
